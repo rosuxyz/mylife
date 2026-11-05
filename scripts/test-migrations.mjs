@@ -56,6 +56,24 @@ try {
     [userA],
   );
   assert.equal(ownAccounts.rows.length, 1, "signup should create one private default account");
+  await setAuthenticatedUser(userB);
+  await database.query(
+    "insert into public.accounts(user_id, name, account_type, currency_code) values ($1, 'Dollar account', 'checking', 'USD')",
+    [userB],
+  );
+  const currencyDefaults = await database.query(
+    "select currency_code, is_default from public.accounts where user_id = $1 order by currency_code",
+    [userB],
+  );
+  assert.deepEqual(
+    currencyDefaults.rows,
+    [
+      { currency_code: "GBP", is_default: true },
+      { currency_code: "USD", is_default: true },
+    ],
+    "each currency should receive an active default account",
+  );
+  await setAuthenticatedUser(userA);
   const defaultCategories = await database.query(
     "select name from public.categories where user_id = $1 and kind = 'expense' and is_default order by name",
     [userA],
